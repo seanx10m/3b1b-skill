@@ -1,6 +1,6 @@
 # Tools
 
-Pipeline scripts and the local viewer used by `manim-skill`.
+Pipeline scripts and the local viewer used by the `3b1b` skill.
 
 ## video_viewer.py
 
@@ -66,3 +66,10 @@ python3 lint-subtitles.py script.py    # 0 = clean, 1 = issues, 2 = incomplete/i
 
 - Python 3.10+, ffmpeg/ffprobe
 - Voiceover: `uv add "kokoro>=0.9.4" soundfile` (local Kokoro, no API key)
+
+## Added in this fork
+
+- `setup.sh` - one-time venv + TinyTeX + LaTeX packages, prints a doctor report. `--kokoro` adds the offline voice.
+- `contact-sheet.sh video.mp4 [sheet.png]` - 12 evenly spaced frames tiled 4x3 for self-review.
+- `tts-generate.py --engine auto|gemini|elevenlabs|kokoro` - auto picks Gemini, then ElevenLabs, then Kokoro.
+- `video_viewer.py --no-open` - serve without opening a browser.

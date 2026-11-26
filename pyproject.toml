@@ -1,11 +1,11 @@
 [project]
-name = "manim-skill"
-version = "1.0.0"
-description = "Coding-agent skill for creating Manim animations with local Kokoro voiceover"
+name = "3b1b-skill"
+version = "2.0.0"
+description = "3b1b-style Manim explainer videos and STE100 writing skills"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "manim>=0.18",
-    "kokoro>=0.9.4",
+    "manim>=0.19",
+    "kokoro>=0.9.4",  # optional offline voice
     "soundfile",
 ]

@@ -1,37 +1,39 @@
 {
-  "name": "manim-skill",
+  "name": "3b1b-skill",
   "owner": {
-    "name": "Yusuke Miyashita"
+    "name": "seanx10m"
   },
   "metadata": {
-    "description": "Manim animation skill for Claude Code",
-    "version": "1.0.0"
+    "description": "3b1b explainer videos + STE100 writing",
+    "version": "2.0.0"
   },
   "plugins": [
     {
-      "name": "manim-skill",
+      "name": "3b1b-skill",
       "source": "./",
-      "description": "Claude Code Skill for creating mathematical animations using Manim Community Edition. Plan, code, render, and iterate on 3Blue1Brown-style videos.",
-      "version": "1.0.0",
+      "description": "3b1b-style Manim explainer videos with voiceover, plus ASD-STE100 Simplified Technical English writing.",
+      "version": "2.0.0",
       "author": {
-        "name": "Yusuke Miyashita"
+        "name": "seanx10m"
       },
-      "homepage": "https://github.com/ymiy/manim-skill",
-      "repository": "https://github.com/ymiy/manim-skill",
+      "homepage": "https://github.com/seanx10m/3b1b-skill",
+      "repository": "https://github.com/seanx10m/3b1b-skill",
       "license": "MIT",
       "keywords": [
-        "claude-skill",
-        "claude-code",
         "manim",
-        "animation",
-        "math",
-        "video",
         "3blue1brown",
-        "visualization",
-        "model-invoked"
+        "video",
+        "explainer",
+        "ste100",
+        "technical-writing"
       ],
       "category": "video",
-      "tags": ["manim", "animation", "math", "video", "visualization"]
+      "tags": [
+        "manim",
+        "video",
+        "explainer",
+        "writing"
+      ]
     }
   ]
 }

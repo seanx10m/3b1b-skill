@@ -1,78 +1,43 @@
-# Manim Skill
+# 3b1b-skill
 
-**Create videos like you write code, with your coding agent**
+Two agent skills for explaining things clearly, after [Karpathy's tip](https://x.com/karpathy) to ask models for "a 3b1b style video explainer" and for ASD-STE100 writing.
 
-Works with Claude Code and Codex. Your coding agent autonomously generates
-3Blue1Brown-style videos following a structured workflow: Narration → TTS → Code →
-Render → Mux → View. Voiceover narration and time-synced subtitles are on by
-default.
+| Skill | What it does |
+|---|---|
+| [`3b1b`](skills/3b1b/SKILL.md) | Makes a narrated explainer video in the visual style of 3Blue1Brown with Manim: question first, concrete example, color-coded math, smooth transforms, voiceover with synced subtitles. |
+| [`ste100`](skills/ste100/SKILL.md) | Writes or rewrites text in ASD-STE100 Simplified Technical English (strict or relaxed). The `3b1b` skill uses relaxed mode for its narration. |
 
-![Manim Skill Demo](manim_skill.gif)
+Forked from [Yusuke710/manim-skill](https://github.com/Yusuke710/manim-skill) (MIT).
 
-## Installation
+## What changed from upstream
+
+- **A real style guide.** `references/style.md` turns the 3b1b look into checkable rules: story arc, fixed color key, typography, motion vocabulary, and a reject list.
+- **A Manim cookbook.** `references/cookbook.md` has patterns for morphing color-coded equations, `ValueTracker` sliders, camera zooms, linear maps, 3D, and the traps that cost re-renders.
+- **Three voices.** `tts-generate.py --engine auto|gemini|elevenlabs|kokoro`. Cloud engines run four clips in parallel and retry on 429/5xx.
+- **One-command setup.** `tools/setup.sh` builds a manim venv and installs TinyTeX (no sudo) with the LaTeX packages manim needs, then prints a doctor report.
+- **Self-review.** `tools/contact-sheet.sh` tiles 12 frames so the agent checks its own output before showing it.
+- **Background-safe viewer.** `video_viewer.py --no-open` serves the review page without opening a browser.
+
+## Install
 
 ```bash
-git clone https://github.com/Yusuke710/manim-skill
-cd manim-skill
-
-# System libraries (macOS)
-brew install cairo pkg-config ffmpeg
-brew install --cask mactex-no-gui   # LaTeX — required for Tex/MathTex text rendering
-
-# Python packages — Manim + local Kokoro voiceover(no API key needed), from pyproject.toml
-uv sync
-
-# Register the skill (symlink it into each agent's skills dir)
-ln -s "$PWD/skills/manim-skill" ~/.claude/skills/manim-skill   # Claude Code
-ln -s "$PWD/skills/manim-skill" ~/.codex/skills/manim-skill    # Codex
-# Alternatively, ask your coding agent to add this skill
+git clone https://github.com/seanx10m/3b1b-skill.git
+ln -s "$PWD/3b1b-skill/skills/3b1b" ~/.claude/skills/3b1b
+ln -s "$PWD/3b1b-skill/skills/ste100" ~/.claude/skills/ste100
+3b1b-skill/skills/3b1b/tools/setup.sh        # add --kokoro for the offline voice
 ```
 
-## How it works
+Or as a Claude Code plugin: `/plugin marketplace add seanx10m/3b1b-skill`.
 
-Describe the video to your coding agent. It chooses the scene structure directly
-in the animation code, without creating a separate plan document.
+For narration, set `GEMINI_API_KEY` (or write `~/.gemini_api_key`), or `ELEVENLABS_API_KEY`, or run setup with `--kokoro`.
 
-1. **Generate** - The agent writes spoken lines to `narration.txt`, generates
-   local Kokoro TTS, writes Manim code using measured narration timing, checks
-   subtitles, renders, and muxes until `video.mp4` exists. Silent videos skip
-   narration and go straight to code and rendering.
-2. **Iterate** - Claude opens a video viewer in your browser. Add feedback,
-   copy it into Claude Code, and Claude refines the video based on your notes.
-   The same workflow works with Codex.
-
-   ![Video viewer showing how Capture adds a timestamp and scene name to Notes, with an annotated arrow](skills/manim-skill/tools/video_viewer.png)
-
-   Watch the video and pause at a moment you want to discuss. Click **Capture**
-   or press **t** to add the current timestamp and scene name to **Notes**.
-   Describe what to fix in that frame, request a change, or ask a question—for
-   example, "These labels overlap; move them apart" or "Why does this token
-   attend most strongly to cup?" Repeat for any other moments.
-
-   Click **Copy**, paste the notes into Claude Code (or Codex), and send them.
-   The agent can inspect the referenced frames, answer your questions, and
-   update the affected scenes. Reload the viewer to watch the revised video
-   and repeat as needed.
-
-## Local voiceover with Kokoro TTS
-
-Narration uses [Kokoro TTS](https://github.com/hexgrad/kokoro), an open-weight
-text-to-speech model that runs locally without an API key. `uv sync` installs
-the Python dependencies.
-
-## Where files go
-
-Every video is a flat session folder under one consistent home — **never** in
-your working directory:
+## Use
 
 ```
-~/.manim-skill/<project-slug>/    # narration.txt, script.py, video.mp4, media/, ...
+/3b1b explain why the harmonic series diverges
+/ste100 rewrite this runbook in strict mode
 ```
 
-Override the home with `MANIM_SKILL_HOME`. This means you can point the skill at
-your own codebase ("visualize this algorithm") without it leaving artifacts
-behind — it reads your files in place and writes only into the session folder.
+Videos land in `~/.manim-skill/<topic>/video.mp4`.
 
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
+![Video viewer](docs/video_viewer.png)

@@ -148,6 +148,7 @@ def main():
     p.add_argument("--host", default="127.0.0.1", help="Host to bind (default: 127.0.0.1)")
     p.add_argument("--srt")
     p.add_argument("--script")
+    p.add_argument("--no-open", action="store_true", help="Do not open a browser (background agents)")
     args = p.parse_args()
 
     if not os.path.exists(args.video):
@@ -181,7 +182,8 @@ def main():
         with socketserver.TCPServer((args.host, port), handler) as srv:
             url = f"http://localhost:{port}"
             print(f"Viewer: {url}")
-            threading.Timer(0.5, lambda: webbrowser.open(url)).start()
+            if not args.no_open:
+                threading.Timer(0.5, lambda: webbrowser.open(url)).start()
             print(f"VIDEO_READY http://localhost:{port}", flush=True)
             srv.serve_forever()
     except KeyboardInterrupt:
