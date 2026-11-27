@@ -36,7 +36,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-DEFAULT_VOICES = {"kokoro": "am_michael", "gemini": "Charon", "elevenlabs": "JBFqnCBsd6RMkjVDRZzb"}
+DEFAULT_VOICES = {"kokoro": "am_michael", "gemini": "Iapetus", "elevenlabs": "JBFqnCBsd6RMkjVDRZzb"}
 GEMINI_MODEL = os.environ.get("GEMINI_TTS_MODEL", "gemini-3.8-flash-tts")
 ELEVEN_MODEL = os.environ.get("ELEVENLABS_MODEL", "eleven_multilingual_v2")
 KOKORO_MODEL_ID = "hexgrad/Kokoro-82M"

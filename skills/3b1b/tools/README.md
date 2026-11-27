@@ -71,5 +71,7 @@ python3 lint-subtitles.py script.py    # 0 = clean, 1 = issues, 2 = incomplete/i
 
 - `setup.sh` - one-time venv + TinyTeX + LaTeX packages, prints a doctor report. `--kokoro` adds the offline voice.
 - `contact-sheet.sh video.mp4 [sheet.png]` - 12 evenly spaced frames tiled 4x3 for self-review.
+- `mix-audio.py --video v.mp4 --voice vo.mp3 [--bed m.mp3] --out video.mp4` - voice fade-in + steady level, smooth bed duck, whoosh on the first word.
+- `whoosh.py out.wav` - the whoosh alone (peak at 60% of its 0.9 s).
 - `tts-generate.py --engine auto|gemini|elevenlabs|kokoro` - auto picks Gemini, then ElevenLabs, then Kokoro.
 - `video_viewer.py --no-open` - serve without opening a browser.
