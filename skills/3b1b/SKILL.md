@@ -128,6 +128,7 @@ class Scene1_Question(Scene):
 - Ease every move (`rate_functions.ease_in_out_cubic` or the default smooth; never `linear` except steady sweeps).
 - Overlap moves: play the content animation and the cast reaction in the same `play`, or use `LaggedStart` / `Succession(Wait(x), ...)`, instead of one after another.
 - Key reveals run slower (2-2.5 s) and get a 0.5-1.3 s hold after them.
+- Small labels (under ~40 pt) enter with `FadeIn(label, shift=UP * 0.15)`, not `Write`: the first frames of `Write` read as stray glyphs ("interface" starts as "1ı"). Edges and rules use `GrowFromCenter`, not `Create`, which starts as a lone tick on a corner. Keep `Write` for titles and equations.
 - Prefer one continuous scene per section. Where you cut, end the scene in the pose the next one starts in, then run `tools/check-seams.py concat.txt` (exit 1 = a visible pop).
 
 ## Step 6: lint, render, check
