@@ -6,14 +6,14 @@ Rules this enforces (every 3b1b video):
 - The bed plays loud in the music-only open, then RAMPS down (default 1.5 s) to a low,
   constant level under the narration. It does not pump between lines: speech gaps
   under --merge-gap seconds count as speech. It ramps back up in long gaps and at the end.
-- A short whoosh peaks right at the first spoken word.
+- No whoosh by default. --whoosh adds a short one that peaks at the first spoken word.
 - A small, low-opacity text credit sits bottom-right for the whole video:
   "Style inspired by 3Blue1Brown". Text only, never their logo (a logo implies
   the video is theirs or endorsed by them). --no-credit turns it off.
 
 usage:
   mix-audio.py --video video_silent.mp4 --voice voiceover.mp3 [--voice-offset 5.0] \
-               [--bed bed.m4a --bed-start 60] [--no-whoosh] --out video.mp4
+               [--bed bed.m4a --bed-start 60] [--whoosh] --out video.mp4
 Speech intervals come from silencedetect on the voice, so any voice track works.
 """
 import argparse
@@ -96,7 +96,7 @@ def main():
     ap.add_argument("--ramp", type=float, default=1.5, help="seconds for each duck ramp")
     ap.add_argument("--merge-gap", type=float, default=3.0, help="speech gaps shorter than this stay ducked")
     ap.add_argument("--voice-fade", type=float, default=0.35, help="fade-in at the first word")
-    ap.add_argument("--no-whoosh", action="store_true")
+    ap.add_argument("--whoosh", action="store_true", help="opt in: a whoosh that peaks on the first word")
     ap.add_argument("--whoosh-db", type=float, default=-3.0)
     ap.add_argument("--credit", default="Style inspired by 3Blue1Brown")
     ap.add_argument("--credit-opacity", type=float, default=0.45)
@@ -108,6 +108,7 @@ def main():
     tmp = Path(tempfile.mkdtemp(prefix="mix-audio-"))
     voice = tmp / "voice.wav"
     ms = int(a.voice_offset * 1000)
+    # the voice plays at 1x: never atempo or time-stretch it; scenes stretch to fit the voice
     run("-i", a.voice, "-af", f"loudnorm=I=-16:TP=-1.5:LRA=7,aresample=48000,adelay={ms}|{ms},apad",
         "-ac", "2", "-t", f"{total:.3f}", voice)
     speech = speech_intervals(voice, total, a.merge_gap)
@@ -125,7 +126,7 @@ def main():
             f"afade=t=in:d=1.5,afade=t=out:st={max(total - 4, 0):.3f}:d=4,atrim=0:{total:.3f}[bed]")
         mixin.append("[bed]")
         k += 1
-    if not a.no_whoosh and speech:
+    if a.whoosh and speech:
         wav = tmp / "whoosh.wav"
         subprocess.run([sys.executable, str(HERE / "whoosh.py"), str(wav)], check=True, capture_output=True)
         at = max(first - 0.6 * 0.9, 0)  # whoosh peak (60% of 0.9 s) lands on the first word

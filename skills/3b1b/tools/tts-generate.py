@@ -197,9 +197,14 @@ def gemini_one(text: str, voice: str, out_path: Path) -> None:
                                       "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice}}}}},
                 headers))
             try:
-                pcm = base64.b64decode(d["candidates"][0]["content"]["parts"][0]["inlineData"]["data"])
+                inline = d["candidates"][0]["content"]["parts"][0]["inlineData"]
+                pcm = base64.b64decode(inline["data"])
             except (KeyError, IndexError):
                 continue
+            # read the real sample rate: a wrong guess would play the voice sped up or slowed down
+            rate = int(re.search(r"rate=(\d+)", inline.get("mimeType", "")).group(1)) if "rate=" in inline.get("mimeType", "") else 24000
+            pcm_to_mp3(pcm, out_path, rate)
+            return
         else:
             d = json.loads(http_post(
                 "https://generativelanguage.googleapis.com/v1beta/interactions",

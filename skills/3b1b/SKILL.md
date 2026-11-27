@@ -146,14 +146,15 @@ python "$TOOLS_DIR/mix-audio.py" --video video_silent.mp4 --voice voiceover.mp3 
   [--voice-offset <music-only open, s>] [--bed <music file> --bed-start <s>] --out video.mp4
 ```
 
-Always mux with `mix-audio.py`, never a bare ffmpeg `-map`. It does three things on every video:
+Always mux with `mix-audio.py`, never a bare ffmpeg `-map`. It does these things on every video:
 - The voice fades in at the first word, then holds one level (loudnorm -16 LUFS). It never cuts in.
 - The music bed (if any) is loud in the open, then ramps down smoothly over 1.5 s, centered on the first word, to a constant low level under the narration. It does not pump between lines. It ramps back up only in gaps longer than 3 s.
-- A short whoosh (`whoosh.py`, swept noise panned left to right) peaks on the first spoken word.
+- No whoosh by default. `--whoosh` adds one (`whoosh.py`, swept noise panned left to right) that peaks on the first spoken word; use it only when the user asks.
+- The voice plays at 1x, its natural rate. Never speed it up: no `atempo`, no time-stretch to fit a scene, no TTS speed or rate setting, no "brisk" or "fast" in the delivery note. When a line runs long, stretch the scene to fit the voice.
 
 Use a bed when the user gives one or names a track; a soft piano bed suits this style.
 To give the music a solo open, start Scene 1 with a few seconds of picture and no subcaption, and pass that length as `--voice-offset`.
-Flags: `--no-whoosh`, `--whoosh-db`, `--bed-high-db`, `--bed-low-db`, `--ramp`, `--merge-gap`.
+Flags: `--whoosh`, `--whoosh-db`, `--bed-high-db`, `--bed-low-db`, `--ramp`, `--merge-gap`.
 
 Silent video: write `video.mp4` from the concat step and skip the mux.
 

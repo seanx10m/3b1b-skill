@@ -105,7 +105,7 @@ Check: the name of the concept must appear after the picture, never before.
 - Never hold more than 2 seconds. Longer reads as a stall.
 - Put the key word last in the line so the voice can lean on it.
 - Condition first, result second: "When the key is already stored, we skip the work."
-- Aim for 150 to 165 wpm in TTS. Slower than his 182, because subtitles need reading time.
+- Let the TTS read at its natural rate (Iapetus lands near 140 to 160 wpm). Never speed up or slow down the voice to fit; change the words or the scene length instead.
 
 ## Things that break the voice
 
@@ -138,7 +138,5 @@ What changed: concrete case before definition, passive to active, "you" and "we"
 ## Gemini TTS delivery prompt
 
 Voice: Iapetus.
-Director's note: Read this like a curious friend thinking out loud beside the viewer, warm and unhurried, never a lecturer.
-Keep a steady, gentle pace, and let a small smile come through on the plain lines.
-Lift the pitch slightly on questions and on the moment a picture changes, and take a tiny breath before the key word of each line so it lands softly.
-Drop to a quieter, slower tone for the admission lines ("this is a lot"), and never rush the last few words of a line.
+Director's note: Read this like a curious friend thinking out loud beside the viewer, warm, never a lecturer. Speak at your natural rate. Let a small smile come through on the plain lines. Lift the pitch slightly on questions and on the moment a picture changes. Use a quieter tone for the admission lines ("this is a lot").
+The note never sets a pace ("brisk", "fast", "slow", "unhurried"): the voice reads at its natural 1x rate, and the scenes stretch to fit it.
