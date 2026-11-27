@@ -7,6 +7,9 @@ Rules this enforces (every 3b1b video):
   constant level under the narration. It does not pump between lines: speech gaps
   under --merge-gap seconds count as speech. It ramps back up in long gaps and at the end.
 - A short whoosh peaks right at the first spoken word.
+- A small, low-opacity text credit sits bottom-right for the whole video:
+  "Style inspired by 3Blue1Brown". Text only, never their logo (a logo implies
+  the video is theirs or endorsed by them). --no-credit turns it off.
 
 usage:
   mix-audio.py --video video_silent.mp4 --voice voiceover.mp3 [--voice-offset 5.0] \
@@ -68,6 +71,19 @@ def duck_expr(intervals, ramp, high_db, low_db):
     return f"pow(10,({high_db}-({high_db - low_db})*min(1,{d}))/20)"
 
 
+def credit_png(text, w, h, path, opacity):
+    from PIL import Image, ImageDraw, ImageFont
+    size = max(12, round(h * 0.022))
+    try:
+        font = ImageFont.truetype("/Library/Fonts/Inter-Medium.ttf", size)
+    except OSError:
+        font = ImageFont.load_default(size=size)
+    tw = int(font.getlength(text)) + 4
+    img = Image.new("RGBA", (tw, int(size * 1.4)), (0, 0, 0, 0))
+    ImageDraw.Draw(img).text((2, 0), text, font=font, fill=(255, 255, 255, int(255 * opacity)))
+    img.save(path)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--video", required=True)
@@ -82,6 +98,9 @@ def main():
     ap.add_argument("--voice-fade", type=float, default=0.35, help="fade-in at the first word")
     ap.add_argument("--no-whoosh", action="store_true")
     ap.add_argument("--whoosh-db", type=float, default=-3.0)
+    ap.add_argument("--credit", default="Style inspired by 3Blue1Brown")
+    ap.add_argument("--credit-opacity", type=float, default=0.45)
+    ap.add_argument("--no-credit", action="store_true")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
 
@@ -114,8 +133,19 @@ def main():
         inputs += ["-i", wav]
         chains.append(f"[{k}:a]volume={a.whoosh_db}dB,adelay={wms}|{wms}[wh]")
         mixin.append("[wh]")
+        k += 1
     chains.append("".join(mixin) + f"amix=inputs={len(mixin)}:normalize=0,alimiter=limit=0.9,atrim=0:{total:.3f}[a]")
-    run(*inputs, "-filter_complex", ";".join(chains), "-map", "0:v", "-map", "[a]", "-c:v", "copy",
+    vmap, vcodec = "0:v", ["-c:v", "copy"]
+    if not a.no_credit:
+        w, h = map(int, subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+                                                 "stream=width,height", "-of", "csv=p=0", a.video]).decode().split(","))
+        png = tmp / "credit.png"
+        credit_png(a.credit, w, h, png, a.credit_opacity)
+        m = round(h * 0.018)
+        inputs += ["-i", png]
+        chains.append(f"[0:v][{k}:v]overlay=x=W-w-{m}:y=H-h-{m}[v]")
+        vmap, vcodec = "[v]", ["-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p"]
+    run(*inputs, "-filter_complex", ";".join(chains), "-map", vmap, "-map", "[a]", *vcodec,
         "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", a.out)
     print(f"wrote {a.out} ({total:.1f}s) speech runs: {[(round(s, 1), round(e, 1)) for s, e in speech]}")
 
