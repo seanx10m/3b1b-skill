@@ -11,10 +11,13 @@ Keep going until `video.mp4` exists. If you are blocked, give the exact blocker 
 
 Use the *style* of 3Blue1Brown: its pedagogy, palette, and motion.
 Never copy its characters (no pi creatures), logo, intro, music, or a specific video's scenes.
+The house cast is the original brace characters in `tools/characters.py`.
+Every video carries a small text credit, "Style inspired by 3Blue1Brown", bottom-right (added by `mix-audio.py`); never their logo.
 
 Read these before you write code:
 - [references/style.md](references/style.md) - story arc, palette, typography, motion. Read it every time.
 - [references/cookbook.md](references/cookbook.md) - Manim patterns for the moves in style.md, and the known traps.
+- [references/narration-style.md](references/narration-style.md) - how 3b1b narration is written (measured), the reveal recipe, pacing, and the Iapetus delivery note. Read it before Step 3.
 
 ## Step 0: environment (once per machine)
 
@@ -74,6 +77,7 @@ Rules for the lines:
 - Every line names something the viewer can *see* on screen at that moment.
 - Write numbers and symbols as spoken words ("x squared", not "x^2").
 - Budget about 2.5 words per second.
+- Follow references/narration-style.md: concrete case first, the viewer's guess, one short question then a hold, name the idea after the picture.
 
 ## Step 4: TTS
 
@@ -82,7 +86,8 @@ python "$TOOLS_DIR/tts-generate.py" --narration narration.txt
 ```
 
 `--engine auto` picks Gemini (key set), then ElevenLabs, then local Kokoro.
-Override with `--engine gemini --voice Charon`, `--engine elevenlabs --voice <id>`, or `--engine kokoro --voice am_michael`.
+The default Gemini voice is Iapetus (clear, light, curious).
+For a steered read, use `GEMINI_TTS_MODEL=gemini-2.5-pro-preview-tts` with `--style "<delivery note from narration-style.md>"`; the 3.x models read any style text aloud, so the tool drops it there. Override with `--engine gemini --voice Charon`, `--engine elevenlabs --voice <id>`, or `--engine kokoro --voice am_michael`.
 Unchanged lines come from `.tts-cache/`. `--bust <index|text>` drops one clip.
 Check the printed clip count matches your line count.
 **Read `timestamps.json` before you write code.** Each `duration_s` is the time budget for that line.
@@ -115,6 +120,17 @@ class Scene1_Question(Scene):
         self.wait(max(0, dur - used))
 ```
 
+### Cast and motion (Step 5 rules)
+
+- Use the cast from `tools/characters.py` (`sys.path.insert(0, TOOLS_DIR)`; `from characters import cast, react, idle_blinks`): three listeners bottom-left (curious, skeptic, eager) and a calm narrator bottom-right.
+- The cast reacts every line or two, each by its own temperament: `look_at`, `lean_in`, `nod`, `shrug`, `scratch_head`, `squint`, `surprise`, `smile`, `hop`, `blink`. Use `react(chars, "confused"|"reveal"|"agree"|"doubt")` for a staggered group reaction.
+- Fill holds over 0.6 s with `idle_blinks(chars, seconds)` instead of `self.wait`, so nobody freezes.
+- Ease every move (`rate_functions.ease_in_out_cubic` or the default smooth; never `linear` except steady sweeps).
+- Overlap moves: play the content animation and the cast reaction in the same `play`, or use `LaggedStart` / `Succession(Wait(x), ...)`, instead of one after another.
+- Key reveals run slower (2-2.5 s) and get a 0.5-1.3 s hold after them.
+- Small labels (under ~40 pt) enter with `FadeIn(label, shift=UP * 0.15)`, not `Write`: the first frames of `Write` read as stray glyphs ("interface" starts as "1ı"). Edges and rules use `GrowFromCenter`, not `Create`, which starts as a lone tick on a corner. Keep `Write` for titles and equations.
+- Prefer one continuous scene per section. Where you cut, end the scene in the pose the next one starts in, then run `tools/check-seams.py concat.txt` (exit 1 = a visible pop).
+
 ## Step 6: lint, render, check
 
 ```bash
@@ -126,8 +142,19 @@ Write `concat.txt` in scene order, then join and mux:
 
 ```bash
 ffmpeg -y -v error -f concat -safe 0 -i concat.txt -c copy video_silent.mp4
-ffmpeg -y -v error -i video_silent.mp4 -i voiceover.mp3 -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -movflags +faststart video.mp4
+python "$TOOLS_DIR/mix-audio.py" --video video_silent.mp4 --voice voiceover.mp3 \
+  [--voice-offset <music-only open, s>] [--bed <music file> --bed-start <s>] --out video.mp4
 ```
+
+Always mux with `mix-audio.py`, never a bare ffmpeg `-map`. It does these things on every video:
+- The voice fades in at the first word, then holds one level (loudnorm -16 LUFS). It never cuts in.
+- The music bed (if any) is loud in the open, then ramps down smoothly over 1.5 s, centered on the first word, to a constant low level under the narration. It does not pump between lines. It ramps back up only in gaps longer than 3 s.
+- No whoosh by default. `--whoosh` adds one (`whoosh.py`, swept noise panned left to right) that peaks on the first spoken word; use it only when the user asks.
+- The voice plays at 1x, its natural rate. Never speed it up: no `atempo`, no time-stretch to fit a scene, no TTS speed or rate setting, no "brisk" or "fast" in the delivery note. When a line runs long, stretch the scene to fit the voice.
+
+Use a bed when the user gives one or names a track; a soft piano bed suits this style.
+To give the music a solo open, start Scene 1 with a few seconds of picture and no subcaption, and pass that length as `--voice-offset`.
+Flags: `--whoosh`, `--whoosh-db`, `--bed-high-db`, `--bed-low-db`, `--ramp`, `--merge-gap`.
 
 Silent video: write `video.mp4` from the concat step and skip the mux.
 
@@ -137,6 +164,7 @@ Silent video: write `video.mp4` from the concat step and skip the mux.
 "$TOOLS_DIR/contact-sheet.sh" video.mp4 sheet.png     # 12 evenly spaced frames, 4x3
 ```
 
+Run `python "$TOOLS_DIR/check-seams.py" concat.txt` and fix every POP.
 Fix anything on the style.md "reject" list (overlaps, text off frame, tiny labels, frozen frames, a color that changes meaning) and re-render only those scenes.
 Also check the durations: `ffprobe` video and audio lengths must match within 0.2 s.
 

@@ -36,7 +36,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-DEFAULT_VOICES = {"kokoro": "am_michael", "gemini": "Charon", "elevenlabs": "JBFqnCBsd6RMkjVDRZzb"}
+DEFAULT_VOICES = {"kokoro": "am_michael", "gemini": "Iapetus", "elevenlabs": "JBFqnCBsd6RMkjVDRZzb"}
 GEMINI_MODEL = os.environ.get("GEMINI_TTS_MODEL", "gemini-3.8-flash-tts")
 ELEVEN_MODEL = os.environ.get("ELEVENLABS_MODEL", "eleven_multilingual_v2")
 KOKORO_MODEL_ID = "hexgrad/Kokoro-82M"
@@ -80,7 +80,8 @@ def pick_engine(requested: str) -> str:
 
 def cache_path(text: str, voice_id: str, engine: str = "kokoro", cache_dir: Path = CACHE_DIR) -> Path:
     obj = {"model_id": model_id(engine), "text": text, "voice_id": voice_id,
-           "speed": os.environ.get("KOKORO_SPEED", "1")}
+           "speed": os.environ.get("KOKORO_SPEED", "1"),
+           "style": STYLE if engine == "gemini" else ""}
     key = hashlib.sha256(json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     return cache_dir / f"{key}.mp3"
 
@@ -175,9 +176,16 @@ def pcm_to_mp3(pcm: bytes, out_path: Path, rate: int = 24000) -> None:
                    input=pcm, check=True, capture_output=True)
 
 
+STYLE = os.environ.get("GEMINI_TTS_STYLE", "")  # delivery note; set by --style
+
+
 def gemini_one(text: str, voice: str, out_path: Path) -> None:
-    """One Gemini TTS clip. 2.x uses generateContent; 3.x uses the Interactions API."""
+    """One Gemini TTS clip. 2.x uses generateContent; 3.x uses the Interactions API.
+    A delivery note (STYLE) only works on 2.x: there it steers the read and is not spoken.
+    3.x speaks any prefix aloud and rejects system_instruction, so the note is dropped there."""
     key = gemini_key()
+    if STYLE and GEMINI_MODEL.startswith("gemini-2."):
+        text = f"{STYLE}: {text}"
     headers = {"x-goog-api-key": key}
     for attempt in range(3):  # a 200 with no audio part happens; it renders on a re-roll
         seed = 42 + attempt
@@ -189,9 +197,14 @@ def gemini_one(text: str, voice: str, out_path: Path) -> None:
                                       "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice}}}}},
                 headers))
             try:
-                pcm = base64.b64decode(d["candidates"][0]["content"]["parts"][0]["inlineData"]["data"])
+                inline = d["candidates"][0]["content"]["parts"][0]["inlineData"]
+                pcm = base64.b64decode(inline["data"])
             except (KeyError, IndexError):
                 continue
+            # read the real sample rate: a wrong guess would play the voice sped up or slowed down
+            rate = int(re.search(r"rate=(\d+)", inline.get("mimeType", "")).group(1)) if "rate=" in inline.get("mimeType", "") else 24000
+            pcm_to_mp3(pcm, out_path, rate)
+            return
         else:
             d = json.loads(http_post(
                 "https://generativelanguage.googleapis.com/v1beta/interactions",
@@ -299,7 +312,9 @@ def main() -> None:
     parser.add_argument("--engine", default=os.environ.get("TTS_ENGINE", "auto"),
                         choices=["auto", "gemini", "elevenlabs", "kokoro"])
     parser.add_argument("--voice", default=None,
-                        help="Voice for the engine (defaults: gemini Charon, elevenlabs George, kokoro am_michael)")
+                        help="Voice for the engine (defaults: gemini Iapetus, elevenlabs George, kokoro am_michael)")
+    parser.add_argument("--style", default=None,
+                        help="Gemini 2.x delivery note (director's note); see references/narration-style.md")
     parser.add_argument("--out-audio", default="voiceover.mp3")
     parser.add_argument("--out-timestamps", default="timestamps.json")
     parser.add_argument("--bust", metavar="INDEX_OR_TEXT",
@@ -308,6 +323,9 @@ def main() -> None:
 
     engine = pick_engine(args.engine)
     voice_id = args.voice or DEFAULT_VOICES[engine]
+    global STYLE
+    if args.style is not None:
+        STYLE = args.style
     subtitles = parse_subtitles(args.narration)
 
     if args.bust is not None:
